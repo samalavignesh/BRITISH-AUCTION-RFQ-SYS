@@ -2,21 +2,21 @@ package com.example.backend.controller;
 
 import com.example.backend.entity.Bid;
 import com.example.backend.entity.RFQ;
+import com.example.backend.entity.ActivityLog;
 import com.example.backend.service.BidService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
 @RestController
 public class RFQController {
+
     @Autowired
     private BidService bidService;
 
+    //  Get RFQ details
     @GetMapping("/rfq")
     public RFQ getSampleRFQ() {
         RFQ rfq = new RFQ();
@@ -33,40 +33,39 @@ public class RFQController {
         return rfq;
     }
 
-
-        @GetMapping("/bid")
-    public Bid getSampleBid() {
-        Bid bid = new Bid();
-        bid.setBidId(1L);
-        bid.setRfqId(1L);
-        bid.setSupplierId(101L);
-        bid.setPrice(950.0);
-        bid.setCreatedAt("2026-04-27 17:55");
-
-        return bid;
-    }
-        @PostMapping("/bid")
+    //  Place a bid
+    @PostMapping("/bid")
     public Bid placeBid(@RequestBody Bid bid) {
         return bidService.addBid(bid);
     }
 
-
-
-
-        @GetMapping("/bids")
+    //  Get all bids
+    @GetMapping("/bids")
     public List<Bid> getAllBids() {
         return bidService.getAllBids();
     }
 
-
-        @GetMapping("/bids/lowest")
+    //  Get lowest bid (L1)
+    @GetMapping("/bids/lowest")
     public Bid getLowestBid() {
         return bidService.getLowestBid();
     }
 
+    //  Get ranking (L1, L2, L3...)
+    @GetMapping("/ranking")
+    public List<Bid> getRanking() {
+        return bidService.getRanking();
+    }
 
+    //  Get current auction close time
     @GetMapping("/rfq/current-time")
-public String getCurrentCloseTime() {
-    return bidService.getCurrentCloseTime();
-}
+    public String getCurrentCloseTime() {
+        return bidService.getCurrentCloseTime();
+    }
+
+    //  Get activity logs
+    @GetMapping("/logs")
+    public List<ActivityLog> getLogs() {
+        return bidService.getLogs();
+    }
 }
