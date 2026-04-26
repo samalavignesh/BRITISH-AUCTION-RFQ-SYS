@@ -3,19 +3,27 @@ package com.example.backend.service;
 import com.example.backend.entity.ActivityLog;
 import com.example.backend.entity.Bid;
 import com.example.backend.entity.RFQ;
+import com.example.backend.repository.ActivityLogRepository;
+import com.example.backend.repository.BidRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class BidService {
 
-    private List<Bid> bids = new ArrayList<>();
-    private List<ActivityLog> logs = new ArrayList<>();
-    private RFQ rfq = new RFQ();
+    @Autowired
+    private BidRepository bidRepository;
 
+    @Autowired
+    private ActivityLogRepository logRepository;
+
+    private RFQ rfq = new RFQ();
     private Long previousL1SupplierId = null;
 
     public BidService() {
@@ -23,22 +31,20 @@ public class BidService {
         rfq.setForcedCloseTime("2026-04-27 19:00");
         rfq.setTriggerWindowMinutes(10);
         rfq.setExtensionDurationMinutes(5);
-        rfq.setExtensionType("ANY_BID"); // change to test
+        rfq.setExtensionType("ANY_BID");
         rfq.setCurrentBidCloseTime(rfq.getBidCloseTime());
     }
 
     public Bid addBid(Bid bid) {
 
-        // 🔥 VALIDATION
         Bid lowest = getLowestBid();
         if (lowest != null && bid.getPrice() >= lowest.getPrice()) {
             throw new IllegalArgumentException("Bid must be lower than current lowest");
         }
 
-        bids.add(bid);
+        bidRepository.save(bid);
 
-        logEvent("BID", "Supplier " + bid.getSupplierId() +
-                " placed bid: " + bid.getPrice(), bid.getCreatedAt());
+        logEvent("BID", "Supplier " + bid.getSupplierId() + " bid " + bid.getPrice(), bid.getCreatedAt());
 
         checkAndExtendAuction(bid);
 
@@ -46,11 +52,12 @@ public class BidService {
     }
 
     public List<Bid> getAllBids() {
-        return bids;
+        return bidRepository.findAll();
     }
 
     public List<Bid> getRanking() {
-        return bids.stream()
+        return bidRepository.findAll()
+                .stream()
                 .sorted(Comparator.comparing(Bid::getPrice))
                 .toList();
     }
@@ -64,7 +71,7 @@ public class BidService {
     }
 
     public List<ActivityLog> getLogs() {
-        return logs;
+        return logRepository.findAll();
     }
 
     private void logEvent(String type, String desc, String time) {
@@ -72,7 +79,7 @@ public class BidService {
         log.setEventType(type);
         log.setDescription(desc);
         log.setTimestamp(time);
-        logs.add(log);
+        logRepository.save(log);
     }
 
     private void checkAndExtendAuction(Bid bid) {
@@ -99,7 +106,7 @@ public class BidService {
                     break;
 
                 case "RANK_CHANGE":
-                    shouldExtend = true; // simplified (acceptable)
+                    shouldExtend = true;
                     break;
 
                 case "L1_CHANGE":

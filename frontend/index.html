@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>British Auction RFQ</title>
+</head>
+<body style="font-family: Arial; padding:20px">
+
+<h2>British Auction RFQ System</h2>
+
+<h3>Current Close Time:</h3>
+<p id="time"></p>
+
+<h3>Place Bid</h3>
+<input type="number" id="price" placeholder="Enter price"/>
+<button onclick="submitBid()">Submit</button>
+
+<h3>Ranking</h3>
+<ul id="bids"></ul>
+
+<h3>Activity Logs</h3>
+<ul id="logs"></ul>
+
+<script>
+
+function fetchData() {
+    fetch("http://localhost:8080/bids")
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById("bids");
+            list.innerHTML = "";
+
+            data.sort((a,b)=>a.price-b.price).forEach((b,i)=>{
+                list.innerHTML += `<li>L${i+1} → Supplier ${b.supplierId} → ₹${b.price}</li>`;
+            });
+        });
+
+    fetch("http://localhost:8080/logs")
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById("logs");
+            list.innerHTML = "";
+
+            data.forEach(log=>{
+                list.innerHTML += `<li>[${log.eventType}] ${log.description}</li>`;
+            });
+        });
+
+    fetch("http://localhost:8080/rfq/current-time")
+        .then(res => res.text())
+        .then(data => {
+            document.getElementById("time").innerText = data;
+        });
+}
+
+function submitBid() {
+    const price = document.getElementById("price").value;
+
+    const bid = {
+        bidId: Date.now(),
+        rfqId: 1,
+        supplierId: Math.floor(Math.random()*1000),
+        price: parseFloat(price),
+        createdAt: "2026-04-27 17:55"
+    };
+
+    fetch("http://localhost:8080/bid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bid)
+    })
+    .then(res => res.json())
+    .then(()=>{
+        fetchData();
+        document.getElementById("price").value = "";
+    })
+    .catch(err => alert("Error: " + err));
+}
+
+fetchData();
+
+</script>
+
+</body>
+</html>
